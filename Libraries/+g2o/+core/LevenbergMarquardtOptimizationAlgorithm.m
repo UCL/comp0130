@@ -30,7 +30,7 @@ classdef LevenbergMarquardtOptimizationAlgorithm < g2o.core.OptimizationAlgorith
             this.e4 = 0;
         end
         
-        function k = solve(this, X0, kmax)
+        function [X, k] = solve(this, X0, kmax)
             
             k = 0;
             nu = 2;

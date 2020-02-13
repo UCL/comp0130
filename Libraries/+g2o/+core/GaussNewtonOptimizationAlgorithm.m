@@ -13,7 +13,7 @@ classdef GaussNewtonOptimizationAlgorithm < g2o.core.OptimizationAlgorithm
             end
         end
         
-        function numberOfIterations = solve(this, X0, maximumNumberOfIterations)
+        function [X, numberOfIterations] = solve(this, X0, maximumNumberOfIterations)
             
             % Set the graph to the initial condition. Might be redundant
             this.optimizableGraph.assignXToVertices(X0);
@@ -68,6 +68,8 @@ classdef GaussNewtonOptimizationAlgorithm < g2o.core.OptimizationAlgorithm
                     R1 = this.optimizableGraph.chi2();
                 end
                 
+                X = XadX;
+
                 % If this condition fails, this captures the cases that
                 % either (a) the cost didn't change very much or (b) the
                 % cost actually went up
@@ -77,7 +79,6 @@ classdef GaussNewtonOptimizationAlgorithm < g2o.core.OptimizationAlgorithm
                 
                 % Store the new best cost and solution
                 R0 = R1;
-                X = XadX;
             end
         end
     end

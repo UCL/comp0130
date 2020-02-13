@@ -21,7 +21,8 @@ classdef OptimizationAlgorithm < handle
         function init(this)
         end
         
-        function numberOfIterations = solve(this, X0, maximumNumberOfIterations)
+        function [X, numberOfIterations] = solve(this, X0, maximumNumberOfIterations)
+            X=[];
             numberOfIterations = -1;
         end
         

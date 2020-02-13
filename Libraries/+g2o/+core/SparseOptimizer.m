@@ -132,7 +132,8 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
                 'g2o:sparseoptimizer:optimizationalgorithmnotset', ...
                 'The optimization algorithm is not set');
             
-            numIterations = this.optimizationAlgorithm.solve(this.X, maximumNumberOfIterations);
+            [X, numIterations] = this.optimizationAlgorithm.solve(this.X, maximumNumberOfIterations);
+            this.X = X;
         end
 
     end
