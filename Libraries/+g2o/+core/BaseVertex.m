@@ -24,7 +24,7 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         
     end
     
-    properties(Access = public)%{?g2o.core.OptimizableGraph,?g2o.core.BaseEdge})
+    properties(Access = {?g2o.core.HyperGraphElement,?g2o.core.OptimizableGraph})
         % The indices in the big X array used in the optimizable graph
         % We let the optimizable graph access it directly to speed things
         % up a bit.
