@@ -4,7 +4,8 @@
 %
 % and v(k) is a Random Gaussian noise term
 %
-% The implementation is deliberately incomplete for Task 2.
+% Rerranging, the subject of the formula is
+% v(k) = F*x(k) - x(k+1)
 
 classdef ObjectProcessModelEdge < g2o.core.BaseBinaryEdge
     
@@ -30,15 +31,12 @@ classdef ObjectProcessModelEdge < g2o.core.BaseBinaryEdge
        
         % This method needs to be implemented for Task 2
         function computeError(this)
-            %this.errorZ = NaN(4, 1);
             this.errorZ = this.F * this.edgeVertices{1}.x ...
                 - this.edgeVertices{2}.x;
         end
         
         % This method needs to be implemented for Task 2
         function linearizeOplus(this)
-            %this.J{1} = NaN(4, 4);
-            %this.J{2} = NaN(4, 4);
             this.J{1} = this.F;
             this.J{2} = - eye(4);
         end        
