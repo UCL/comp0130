@@ -3,7 +3,11 @@
 % estimated using an ideal range-bearing sensor which measures the range
 % and bearing to zero or more landmarks in the environment. A landmark
 % is visible if it's within a given distance of the vehicle. In addition,
-% the bearing must be below a threshold
+% the bearing must be below a threshold.
+%
+% Note this is NOT a SLAM problem because the landmark positions are all
+% assumed known. You will create a SLAM system and investigate its
+% properties for Coursework 02.
 
 import g2o.core.*;
 import odometry_model_answer.*;
@@ -61,7 +65,6 @@ end
 % Create the graph
 graph = SparseOptimizer();
 algorithm = LevenbergMarquardtOptimizationAlgorithm();
-%algorithm = MatlabNLOptimizationAlgorithm();
 %algorithm = GaussNewtonOptimizationAlgorithm();
 graph.setAlgorithm(algorithm);
 
