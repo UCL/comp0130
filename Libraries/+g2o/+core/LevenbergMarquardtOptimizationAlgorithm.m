@@ -89,13 +89,7 @@ classdef LevenbergMarquardtOptimizationAlgorithm < g2o.core.OptimizationAlgorith
                         % Accept the new state
                         X = XdX;
                         R0 = R1;
-                        
-                        % Set the graph to the initial condition. Might be redundant
-                        %this.optimizableGraph.assignXToVertices(X);
-            
-                        % Get the cost of the initial solution, and check it's okay
-                        %R1 = this.optimizableGraph.chi2();
-                        
+                       
                         % Compute the information matrices; note that we do this
                         % each time with X. This accounts for the effects of both
                         % updated and rejected steps.
