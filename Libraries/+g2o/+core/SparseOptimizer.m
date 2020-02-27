@@ -14,6 +14,13 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
         % Use sparseinv?
         useSparseInv;
         
+        % Estimated number of non-zero elements in the Hessian
+        nonZeroElementsHXD;
+        nonZeroElementsHXU;
+        
+        % Cached values
+        HX;
+        bX;
     end
     
     methods(Access = public)
@@ -61,19 +68,21 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
                 'g2o:sparseoptimizer:initializationrequired', ...
                 'Call initializeOptimization before extracting the marginals');
 
-            % Get the information matrix
-            HX = this.computeHB(this.X);
-
+            % Special case - if the Hessian is empty, assume nowt
+            if (isempty(this.HX) == true)
+                x = zeros(3, 1);
+                Px = zeros(3, 3);
+                return
+            end
+            
             % If a set of vertices wasn't specified, return the whole graph
             if (nargin == 1)
                 x = this.X;
-                tic
                 if (this.useSparseInv == true)
-                    Px = sparseinv(HX);
+                    Px = sparseinv(this.HX);
                 else 
-                    Px = inv(HX);
+                    Px = inv(this.HX);
                 end
-                toc
                 return
             end
             
@@ -96,17 +105,22 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             % Compute the inverse (might have a smarter way to do it in the
             % future!)
             if (this.useSparseInv == true)
-                PX = sparseinv(HX);
+                PX = sparseinv(this.HX);
             else 
-                PX = inv(HX);
+                PX = inv(this.HX);
             end
             
             idx = 1;
             for v = 1 : length(vertices)
                 d = vertices{v}.dimension();
                 id = idx:(idx+d-1);
-                x(id) = this.X(vertices{v}.iX);
-                Px(id, id) = PX(vertices{v}.iX, vertices{v}.iX);
+                if (vertices{v}.conditioned == true)
+                    x(id) = vertices{v}.estimate();
+                    Px(id, id) = zeros(d, d);
+                else
+                    x(id) = this.X(vertices{v}.iX);
+                    Px(id, id) = PX(vertices{v}.iX, vertices{v}.iX);
+                end
                 idx = idx + d;
             end
         end
@@ -157,13 +171,15 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             % up construction, we compute the "upper triangle" and the
             % diagonal sub-blocks separately. We assemble them together
             % afterwards.
-            HXU = sparse(n, n);
-            HXD = sparse(n, n);
+            HXD = spalloc(n, n, this.nonZeroElementsHXD);
+            HXU = spalloc(n, n, this.nonZeroElementsHXU);
 
             % Construct the correction vector. This isn't sparse, so just
             % allocate it as a normal array.
             if (nargout == 2)
-                bX = zeros(n, 1);
+                this.bX = zeros(n, 1);
+            else
+                this.bX = NaN(n, 1);
             end
                         
             % Iterate over all the edges and get the H and b values for
@@ -183,7 +199,7 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
                         continue;
                     end
                     if (nargout == 2)
-                        bX(idx) = bX(idx) + b{i};
+                        this.bX(idx) = this.bX(idx) + b{i};
                     end
                     HXD(idx, idx) = HXD(idx, idx) + H{i, i};
                     for j = i + 1 : length(edge.edgeVertices)
@@ -194,7 +210,14 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             end
             
             % Construct the full Hessian
-            HX = HXU + HXU' + HXD;
+            this.HX = HXU + HXU' + HXD;
+            
+            if (nargout > 1)
+                HX = this.HX;
+            end
+            if (nargout == 2)
+                bX = this.bX;
+            end
         end
                 
         % Iterate through and set all the vertex states from the state
@@ -243,4 +266,39 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             end
         end
     end
+    
+    methods(Access = protected)
+        
+        function buildStructure(this)
+            
+            % Call the base class constructor
+            buildStructure@g2o.core.OptimizableGraph(this);
+            
+            % Now go through and estimate the number of non-zero elements
+            % in the Hessian for preallocation of the sparse arrays.
+            nzd = 0;
+            nzu = 0;
+            
+            edges = values(this.edgesMap);            
+            for e = 1 : length(edges)
+                edge = edges{e};
+                for i = 1 : length(edge.edgeVertices)
+                    idx = edge.edgeVertices{i}.iX;
+                    if (isempty(idx) == true)
+                        continue;
+                    end
+                    nzd = nzd + length(idx) * length(idx);
+                    for j = i + 1 : length(edge.edgeVertices)
+                        jdx = edge.edgeVertices{j}.iX;
+                        nzu = nzu + length(idx) * length(jdx);
+                    end
+                end
+            end
+            fprintf('Estimated number of non zero elements (d=%d,u=%d)\n', nzd, nzu);
+            fprintf('Estimated density %3.2f%%\n', 100 * (nzd + 2 * nzu) / length(this.X)^2);
+            this.nonZeroElementsHXD = nzd;
+            this.nonZeroElementsHXU = nzu;
+        end            
+    end
+    
 end

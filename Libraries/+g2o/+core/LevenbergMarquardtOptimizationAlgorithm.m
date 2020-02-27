@@ -24,16 +24,17 @@ classdef LevenbergMarquardtOptimizationAlgorithm < g2o.core.OptimizationAlgorith
             
             % Set up values using the numbers from the Lourakis paper
             this.tau = 1e-3;
-            this.e1 = 1e-6;
-            this.e2 = 1e-6;
-            this.e3 = 1e-6;
+            this.e1 = 1e-12;
+            this.e2 = 1e-12;
+            this.e3 = 1e-12;
             this.e4 = 0;
         end
         
         function [X, k] = solve(this, X0, kmax)
             
-            k = 0;
+            k = 1;
             nu = 2;
+            tic
             
             n = length(X0);
             X = X0;
@@ -59,8 +60,7 @@ classdef LevenbergMarquardtOptimizationAlgorithm < g2o.core.OptimizationAlgorith
             mu = this.computeInitialMu(H);            
             
             while ((stop == false) && (k <= kmax))
-                k = k + 1;
-                fprintf('Iteration = %d; Residual = %5.3f\n', k, R0);                
+                fprintf('Iteration = %03d; Residual = %6.3f; Time = %3.3f\n', k, R0, toc);                
 
                 rho = -Inf;
                 
@@ -105,7 +105,8 @@ classdef LevenbergMarquardtOptimizationAlgorithm < g2o.core.OptimizationAlgorith
                         nu = nu * 2;
                     end
                 end
-                stop = stop | (sqrt(R1) < this.e3);
+                stop = stop | (sqrt(R0) < this.e3);
+                k = k + 1;
             end
         end
     end

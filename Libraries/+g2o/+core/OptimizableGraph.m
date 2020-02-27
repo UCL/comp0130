@@ -68,8 +68,10 @@ classdef OptimizableGraph < g2o.core.HyperGraph
             
         end
 
-        function this = initializeOptimization(this)
-            this.validateGraph();
+        function this = initializeOptimization(this, validateGraph)
+            if ((nargin == 2) && (validateGraph == true))
+                this.validateGraph();
+            end
             this.buildStructure();
             this.computeInitialErrors();
             this.initializationRequired = false;
@@ -119,21 +121,37 @@ classdef OptimizableGraph < g2o.core.HyperGraph
         % Make sure that all the vertices and edges are set up correctly
         function validateGraph(this)
             
-            % Check all the vertices are valid
+            % The sets to check
             verticesToCheck = values(this.verticesMap);
+            edgesToCheck = values(this.edgesMap);
+            
+            % First clear the valid state on all vertices and edges
             for v = 1 : length(verticesToCheck)
-                verticesToCheck{v}.validate();
+                verticesToCheck{v}.clearValidated();
+            end
+            for e = 1 : length(edgesToCheck)
+                edgesToCheck{e}.clearValidated();
             end
             
+            % Check all the vertices are valid
+            textprogressbar('validating vertices: ');
+            for v = 1 : length(verticesToCheck)
+                textprogressbar(100*v/length(verticesToCheck));
+                verticesToCheck{v}.validate();
+            end
+            textprogressbar(' completed');
+
             % Check all the edges are valid
-            edgesToCheck = values(this.edgesMap);            
+            textprogressbar('validating edges   : ');
             for e = 1 : length(edgesToCheck)
+                textprogressbar(100*e/length(edgesToCheck));
                 edgesToCheck{e}.validate();
-            end            
+            end
+            textprogressbar(' completed');
         end
         
         % Internally process the structure and pre-cache results where
-        % possible.        
+        % possible.
         function buildStructure(this)
             
             % First accumulate all the states into a big vector
@@ -142,7 +160,7 @@ classdef OptimizableGraph < g2o.core.HyperGraph
             this.X = [];
             
             % Go through each vertex. Identify the non-fixed ones. Store
-            % them in the bix X matrix and assign the index in the big X
+            % them in the big X matrix and assign the index in the big X
             % map
             verticesToCheck = values(this.verticesMap);
             this.nonFixedVertices = cell(length(verticesToCheck), 1);

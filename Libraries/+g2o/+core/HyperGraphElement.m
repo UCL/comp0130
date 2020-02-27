@@ -10,20 +10,24 @@ classdef HyperGraphElement < handle
     
     properties(Access = protected)
         
-        % Inserted in a graph?
-        registeredInGraph;
+        % The graph the element is regstered with
+        owningGraph;
         
         % The id of the vertex. This is of type int64
         elementId;
         
         % The name of this object
         elementName;
+        
+        % Flag shows if validated
+        validated;
     end
     
-    methods(Access = public)
+    methods(Access = protected)
         
         function this = HyperGraphElement()
-            this.registeredInGraph = false;
+            this.owningGraph = [];
+            this.validated = false;
         end
         
     end
@@ -40,9 +44,13 @@ classdef HyperGraphElement < handle
             id = this.elementId;
         end
         
-        % Registered with a graph already?
-        function registeredInGraph = registered(this)
-            registeredInGraph = this.registeredInGraph;
+        % The graph the vertex is registered with
+        function graph = graph(this)
+            graph = this.owningGraph;
+        end
+        
+        function clearValidated(this)
+            this.validated = false;
         end
     end
     
@@ -87,8 +95,12 @@ classdef HyperGraphElement < handle
     
     methods(Access = {?g2o.core.HyperGraph})
         
-        function setRegistered(this, newRegistered)
-            this.registeredInGraph = newRegistered;
+        function setGraph(this, owningGraph)
+            this.owningGraph = owningGraph;
+        end
+        
+        function clearGraph(this)
+            this.owningGraph = [];
         end
     end
 end

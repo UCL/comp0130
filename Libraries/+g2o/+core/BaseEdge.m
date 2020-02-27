@@ -46,11 +46,9 @@ classdef BaseEdge < g2o.core.HyperGraphElement
         
     end
     
-    properties(Access = public)
+    properties(Access = {?g2o.core.HyperGraphElement,?g2o.core.OptimizableGraph})
         % The vertices associated with this edge
         edgeVertices;
-        % Apparently not possible to have protected and class access at the
-        % same time...
     end
     
     methods(Access = protected)
@@ -83,7 +81,10 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             this.Omega = NaN(this.dimZ, this.dimZ);
             this.errorZ = NaN(this.dimZ, 1);
             
-            this.setId(g2o.core.BaseEdge.allocateId());            
+            this.setId(g2o.core.BaseEdge.allocateId());
+            
+            % Preallocate space for the Jacobians for each vertex
+            this.J = cell(1, numVertices);
         end
         
     end
@@ -95,6 +96,9 @@ classdef BaseEdge < g2o.core.HyperGraphElement
         % number. Note that the meaning of each vertex depends on how you
         % define the error function.
         function this = setVertex(this, vertexNumber, vertex)
+            
+            % Cast to the right type
+            vertexNumber = uint32(vertexNumber);
             
             % Check the vertex is of the right kind
             assert(isa(vertex, 'g2o.core.BaseVertex'), 'g2o:baseedge:addedge:wrongclass', ...
@@ -108,7 +112,10 @@ classdef BaseEdge < g2o.core.HyperGraphElement
                 vertexNumber);
             
             % Assign
-            this.edgeVertices{uint32(vertexNumber)} = vertex;
+            this.edgeVertices{vertexNumber} = vertex;
+            
+            % (Re)allocate the storage of the Jacobian for this vertex
+            this.J{vertexNumber} = zeros(vertex.dimension(), this.dimZ);
             
             % Register the edge with the vertex
             vertex.addEdge(this);
@@ -126,17 +133,18 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             % remove it
             foundVertex = false;
             for v = 1 : this.numVertices
-                if ((isempy(this.edgeVertices{v}) == false) && ...
+                if ((isempty(this.edgeVertices{v}) == false) && ...
                         (this.edgeVertices{v}.id() == vertex.id()))
+                    this.edgeVertices{v}.removeEdge(this);
                     this.edgeVertices{v} = [];
                     foundVertex = true;
                     break;
-                end   
+                end
             end
             
             % The vertex wasn't found
             assert(foundVertex == true, 'g2o:baseedge:removeedge:wrongclass', ...
-                'No vertex with ID %d is registered with edge with ID %d', vertex.id(), elementId);
+                'No vertex with ID %d is registered with edge with ID %d', vertex.id(), this.elementId);
         end
         
         % Number of vertices which this edge should connect to
@@ -148,6 +156,15 @@ classdef BaseEdge < g2o.core.HyperGraphElement
         % yet. A valid edge has all of its vertices assigned.
         function numUndefinedVertices = numberOfUndefinedVertices(this)
             numUndefinedVertices = sum(cellfun('isempty',this.edgeVertices));
+        end
+        
+        % Get an individual vertex
+        function v = vertex(this, vertexNumber)
+            
+            assert((vertexNumber > 0) && (vertexNumber <= this.numVertices), ...
+                'g2o:baseedge:illegalvertexid', 'The vertexNumber %d should be between 1 and %d', ...
+                vertexNumber, this.numVertices);
+            v = this.edgeVertices{vertexNumber};            
         end
         
         % Get a cell array of the list of vertices
@@ -229,7 +246,7 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             % Check number of columns
             assert(rows == this.dimension, ...
                 'g2o:baseedge:setmeasurement:measurementwrongdimension', ...
-                'The mesurement dimension is wrong; required=%d, actual=%d', ...
+                'The measurement dimension is wrong; required=%d, actual=%d', ...
                 this.dimZ, rows);
             
             % Check not NaN
@@ -286,12 +303,17 @@ classdef BaseEdge < g2o.core.HyperGraphElement
         % defined, the information is defined (and is positive
         % semidefinite) and all the vertices have been assigned.
         function validate(this)
+            
+            if (this.validated == true)
+                return;
+            end
 
             % If any edges are undefined, then generate a warning and
             % return
             assert(this.numberOfUndefinedVertices() == 0, ...
                 'g2o:baseedge:validate:undefinedvertices', ...
-                'Not all the vertices have been defined for the edge');
+                'this.numberOfUndefinedVertices()=%d for the edge with id %d', ...
+                this.numberOfUndefinedVertices(), this.id);
             
             % Check the measurement is not nan
             assert(any(isnan(this.z)) == false, ...
@@ -304,8 +326,18 @@ classdef BaseEdge < g2o.core.HyperGraphElement
 
             assert(all(eig(this.Omega) > eps), 'g2o:baseedge:validate:informationnotpsd', ...
                 'The information matrix is not positive semidefinite');
-
+            
+            % Check all the vertices and make sure they are registered.
+            for v = 1 : this.numVertices
+                assert(this.edgeVertices{v}.owningGraph == this.owningGraph, ...
+                    'g2o:baseedge:validate:vertcesnotregistered', ...
+                    'vertex with ID %d is not registered with a graph', ...
+                    this.edgeVertices{v}.elementId);
+            end
+            
+            this.validated = true;
         end    
+        
     end
     
     methods(Access = public, Abstract)

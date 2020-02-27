@@ -15,10 +15,6 @@ classdef BaseVertex < g2o.core.HyperGraphElement
 
     properties(Access = protected)
         
-        % The edges connected to this vertex
-        edgeSet;
-        
-        
         % The dimension of the state estimate
         dimX;
         
@@ -35,7 +31,13 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         
         % The state estimate
         x;
-
+                        
+        % The edges connected to this vertex
+        edgesMap;
+        
+        % Cached for speed
+        edgesArray;
+        updateEdgesArray;
     end
     
     methods(Access = protected)
@@ -60,8 +62,12 @@ classdef BaseVertex < g2o.core.HyperGraphElement
             
             % Automatically assign the Id
             this.setId(g2o.core.BaseVertex.allocateId());
+            
+            % Preallocate
+            this.edgesMap = containers.Map('KeyType', 'int64', 'ValueType', 'any');
+            
+            this.updateEdgesArray = true;
         end
-        
     end
     
     methods(Access = public, Sealed = true)
@@ -73,12 +79,17 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         
         % Get the list of vertices associated with this vertex
         function edges = edges(this)
-            edges = this.edgeSet;
+            
+            if (this.updateEdgesArray == true)
+                this.edgesArray = values(this.edgesMap);
+                this.updateEdgesArray = false;
+            end
+            edges = this.edgesArray;
         end
         
         % Get the number of edges this vertex is attached to.
         function numEdges = numberOfEdges(this)
-            numEdges = length(this.edgeSet);
+            numEdges = length(this.edgesMap);
         end
         
         % Return the current value of the estimate stored in the vertex.
@@ -96,7 +107,7 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         function setFixed(this, conditioned)
             this.conditioned = conditioned;
         end
-                        
+        
         % Obtain the hessian index for the vertex states. Internally, the
         % optimiser builds a single giant state vector. The values here are
         % the indices which map the state here to that vector.
@@ -147,11 +158,25 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         % this just checks for NaNs
         function validate(this)
             
+            % If already validated, return
+            if (this.validated == true)
+                return
+            end
+            
             % Check if any NaNs are there
             % Check the dimension; this should be superfluous
             assert(any(isnan(this.x)) == false, ...
                 'g2o:basevertex:validate:estimatehasnans', ...
                 'The estimate contains NaNs');
+            
+            % Check all the edges and make sure they are registered
+            edges = values(this.edgesMap);
+            for e = 1 : length(edges)
+                assert(edges{e}.owningGraph == this.owningGraph, ...
+                    'g2o:basevertex:validate:edgenotregistered', ...
+                    'edge with ID % is not registered with a graph', this.edges{e}.elementId);
+            end            
+            this.validated = true;
         end
         
     end
@@ -171,30 +196,28 @@ classdef BaseVertex < g2o.core.HyperGraphElement
         % The most common example is if the state is a normalized
         % quaternion in which case zero is [0,0,0,1].
         function setToOrigin(this)
-            this.x = zeros(1, dimX);
+            this.x = zeros(1, this.dimX);
         end
     end
     
-    methods(Access = {?g2o.core.BaseEdge})
+    methods(Access = {?g2o.core.HyperGraph,?g2o.core.BaseEdge}, Sealed = true)
         
         % Helper function to add an edge.
         function this = addEdge(this, edge)
-            this.edgeSet{length(this.edgeSet)+1} = edge;
+            this.edgesMap(edge.id) = edge;
+            this.updateEdgesArray = true;
         end
         
         % Helper function to remove an edge.
         function this = removeEdge(this, edge)
-            for e = 1 : length(this.edgeSet)
-                if (this.edgeSet{e}.id() == edge.id())
-                    this.edgeSet = this.edgeSet{[1:e-1 e+1:length(this.edgeSet)]};
-                    return;
-                end
-            end
-            error('Edge not registered with this vertex.'); 
+            assert(isKey(this.edgesMap, edge.id) == true, 'g2o:basevertex:removeedge:repeatid', ...
+                'Attempt to remove unregistered edge %d', edge.id);
+            remove(this.edgesMap, edge.id);
+            this.updateEdgesArray = true;
         end
     end
     
-    methods(Access = {?g2o.core.OptimizableGraph})
+    methods(Access = {?g2o.core.OptimizableGraph}, Sealed = true)
         
         % Internal function to set the indices.
         function setXIndices(this, xIndices)

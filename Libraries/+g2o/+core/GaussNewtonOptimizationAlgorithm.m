@@ -15,6 +15,8 @@ classdef GaussNewtonOptimizationAlgorithm < g2o.core.OptimizationAlgorithm
         
         function [X, numberOfIterations] = solve(this, X0, maximumNumberOfIterations)
             
+            tic;
+            
             % Set the graph to the initial condition. Might be redundant
             this.optimizableGraph.assignXToVertices(X0);
             
@@ -36,7 +38,8 @@ classdef GaussNewtonOptimizationAlgorithm < g2o.core.OptimizationAlgorithm
             while ((numberOfIterations < maximumNumberOfIterations))
                 numberOfIterations = numberOfIterations + 1;
                 
-                fprintf('Iteration = %d; Residual = %.3f\n', numberOfIterations, R0);
+                fprintf('Iteration = %03d; Residual = %6.3f; Time = %3.3f\n', ...
+                    numberOfIterations, R0, toc); 
                 
                 % Compute the problem
                 [H,b] = this.optimizableGraph.computeHB(X);

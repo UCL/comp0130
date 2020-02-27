@@ -59,14 +59,15 @@ classdef HyperGraph < handle
             % Check if the vertex has already been registered with a graph.
             % This catches the case where the vertex has been assigned to a
             % different graph already
-            assert(vertex.registered() == false, 'g2o:hypergraph:addvertex:alreadyregistered', ...
+            assert((isempty(vertex.graph()) == true), ...
+                'g2o:hypergraph:addvertex:alreadyregistered', ...
                 'The vertex has already been registered with a graph');
             
             % Now insert the vertex
             this.verticesMap(vertexId) = vertex;
             
             % Flag as inserted
-            vertex.setRegistered(true);
+            vertex.setGraph(this);
             
         end
         
@@ -86,17 +87,18 @@ classdef HyperGraph < handle
             
             % Check if a vertex with this ID has already been registered;
             % if not, fail
-            assert (isKey(this.vertices, vertexId) == true, 'g2o:hypergraph:removevertex:repeatid', ...
+            assert (isKey(this.verticesMap, vertexId) == true, 'g2o:hypergraph:removevertex:repeatid', ...
                 'Attempt to remove a vertex with ID %d which has not be registered with this graph', vertexId);
             
             % Check if the vertex has already been registered with a graph.
             % This catches the case where the vertex has been assigned to a
             % different graph already
-            assert(vertex.registered() == false, 'g2o:hypergraph:removevertex:alreadyregistered', ...
-                'The vertex ');
+            assert(vertex.graph() == this, ...
+                'g2o:hypergraph:removevertex:alreadyregistered', ...
+                'The vertex is registered with a different graph');
 
-            % Flag the vertex as not registered
-            vertex.setRegistered(false);
+            % Deregister the vertex
+            vertex.clearGraph();
             
             % Now go through all the edges with the vertex and remove this
             % vertex from them. If an edge has no vertices left, then
@@ -112,7 +114,8 @@ classdef HyperGraph < handle
             
             % Now remove the orphaned edges
             for e = 1 : length(edgesToRemove)
-                remove(this.edgeMap, edgesToRemove{e}.id());
+                edgesToRemove{e}.clearGraph();
+                remove(this.edgesMap, edgesToRemove{e}.id());
             end
             
             % Now remove the vertex
@@ -141,12 +144,13 @@ classdef HyperGraph < handle
             % Check if the edge has already been registered with a graph.
             % This catches the case where the edge has been assigned to a
             % different graph already.
-            assert(edge.registered() == false, 'g2o:hypergraph:addedge:alreadyregistered', ...
+            assert((isempty(edge.graph()) == true), ...
+                'g2o:hypergraph:addedge:alreadyregistered', ...
                 'The edge has already been registered with a graph');
             
             % Now insert the edge into the graph
             this.edgesMap(edgeId) = edge;
-            edge.setRegistered(true);
+            edge.setGraph(this);
             
         end
         
@@ -173,11 +177,9 @@ classdef HyperGraph < handle
             % Check if the edge has already been registered with a graph.
             % This catches the case where the edge has been assigned to a
             % different graph already.
-            assert(edge.registered() == true, 'g2o:hypergraph:removeedge:alreadyregistered', ...
+            assert(edge.graph() == this, ...
+                'g2o:hypergraph:removeedge:alreadyregistered', ...
                 'The edge has not been registered with a graph');
-
-            % Flag the vertex as not registered
-            edge.setRegistered(false);
             
             % Now go through all the edges with the vertex and remove this
             % vertex from them. If a vertes has no edges left, then
@@ -193,11 +195,15 @@ classdef HyperGraph < handle
             
             % Now remove the orphaned vertices
             for v = 1 : length(verticesToRemove)
+                verticesToRemove{v}.clearGraph();
                 remove(this.verticesMap, verticesToRemove{v}.id());
             end
-            
+                        
+            % Deregister the edge from the graph
+            edge.clearGraph();
+
             % Now remove the edge
-            remove(this.edgeMap, edgeId);
+            remove(this.edgesMap, edgeId);
         end
     end
 end
