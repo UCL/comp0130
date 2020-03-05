@@ -14,7 +14,7 @@ classdef InitialPriorEdge < g2o.core.BaseUnaryEdge
         end
         
         function linearizeOplus(this)
-            this.J{1} = -eye(3);
+            this.J{1} = eye(3);
         end        
     end
 end
