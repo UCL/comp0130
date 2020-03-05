@@ -85,7 +85,7 @@ classdef OptimizableGraph < g2o.core.HyperGraph
             
             % Default number of iterations
             if (nargin == 1)
-                maximumNumberOfIterations = 10;
+                maximumNumberOfIterations = 50;
             end
             
             numIterations = this.runOptimization(maximumNumberOfIterations);
