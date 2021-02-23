@@ -47,7 +47,7 @@ classdef ObjectPolarMeasurementEdge < g2o.core.BaseUnaryEdge
             
             % Work out Jacobians
             this.J{1} = [-dXY(1)/r 0 -dXY(2)/r 0;
-                dXY(2)/r^2 0 -dXY(1)/r 0];
+                dXY(2)/r^2 0 -dXY(1)/r^2 0];
         end        
     end
 end
