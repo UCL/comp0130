@@ -31,14 +31,14 @@ classdef ObjectProcessModelEdge < g2o.core.BaseBinaryEdge
        
         % This method needs to be implemented for Task 2
         function computeError(this)
-            this.errorZ = this.F * this.edgeVertices{1}.x ...
-                - this.edgeVertices{2}.x;
+            this.errorZ = this.edgeVertices{2}.x - ...
+                this.F * this.edgeVertices{1}.x;
         end
         
         % This method needs to be implemented for Task 2
         function linearizeOplus(this)
-            this.J{1} = this.F;
-            this.J{2} = - eye(4);
+            this.J{1} =  - this.F;
+            this.J{2} = eye(4);
         end        
         
     end
