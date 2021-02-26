@@ -48,7 +48,7 @@ for k = 1 : numberOfTimeSteps
         continue
     end
     
-    processModelEdge = VehicleProcessModelEdge();
+    processModelEdge = VehicleKinematicsEdge();
     processModelEdge.setVertex(1, vertices{k-1});
     processModelEdge.setVertex(2, vertices{k});
     processModelEdge.setMeasurement(odometry);

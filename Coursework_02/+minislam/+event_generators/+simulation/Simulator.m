@@ -52,11 +52,7 @@ classdef Simulator < minislam.event_generators.EventGenerator
             this = this@minislam.event_generators.EventGenerator(parameters);
             
             % Setup default
-            if (nargin == 1)
-                this.scenarioDirectory = 'task12';
-            else
-                this.scenarioDirectory = scenarioDirectory;
-            end
+            this.scenarioDirectory = scenarioDirectory;
             
             if (parameters.perturbWithNoise == true)
                 this.noiseScale = 1;

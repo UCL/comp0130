@@ -241,11 +241,8 @@ classdef GraphicalOutput < handle
                                 [0 event.data(1, l) * sin(event.data(2, l)+this.trueVehicleX(3))];
                         end
                         set(this.laserMeasurementLines, 'XData', lX, 'YData', lY);
-
-                    case minislam.event_types.Event.CAMERA
-                        this.handleCameraEvent(event);                
             end            
-        end        
+        end    
         
         function updateGroundTruthRobot(this, x)
             this.trueVehicleX = x;

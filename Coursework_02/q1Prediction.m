@@ -1,5 +1,8 @@
 % This script runs the odometry
 
+import minislam.slam.kalman.*;
+import minislam.slam.g2o.*;
+
 % Configure to disable other sensor types
 parameters = minislam.event_generators.simulation.Parameters();
 parameters.enableGPS = false;
@@ -10,11 +13,11 @@ parameters.enableLaser = false;
 parameters.perturbWithNoise = false;
 
 % Set up the simulator and the output
-simulator = minislam.event_generators.simulation.Simulator(parameters);
+simulator = minislam.event_generators.simulation.Simulator(parameters, 'q1');
 
 % Create and run the different localization systems
-kalmanFilterSLAMSystem = minislam.slam.kalman.KalmanFilterSLAMSystem();
-g2oSLAMSystem = minislam.slam.g2o.G2OSLAMSystem();
+kalmanFilterSLAMSystem = KalmanFilterSLAMSystem();
+g2oSLAMSystem = G2OSLAMSystem();
 results = minislam.mainLoop(simulator, {kalmanFilterSLAMSystem, g2oSLAMSystem});
 
 % Plot optimisation times

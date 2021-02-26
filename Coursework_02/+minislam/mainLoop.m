@@ -25,8 +25,7 @@ end
 % Start the event generator
 eventGenerator.start();
 
-storeCount = 0;
-
+% Loop until we terminate
 while (eventGenerator.keepRunning() == true)
     
     % Get the step number
@@ -43,11 +42,15 @@ while (eventGenerator.keepRunning() == true)
     % Log the ground truth
     groundTruthState = eventGenerator.groundTruth(false);
     
+    % Iterate over all the localization systems and process
     for l = 1 : numLocalizationSystems
+        
+        % Handle the event for each localization system
         localizationSystem = localizationSystems{l};    
         localizationSystem.processEvents(events);
         runOptimizer = localizationSystem.recommendOptimization();
     
+        % If requested, run the optimizer and log the time required
         if (runOptimizer == true)
             tic
             localizationSystem.optimize();
@@ -59,20 +62,19 @@ while (eventGenerator.keepRunning() == true)
         % Store ground truth in each results structure
         results{l}.vehicleTrueStateTime(storeCount) = eventGenerator.time();
         results{l}.vehicleTrueStateHistory(:, storeCount) = groundTruthState.xTrue;
-
     end
     
-    % Draw the graphics. Note this draws once every third frame which is very smooth but
-    % can be slow. The graphics only update when "true" is passed in.
-    if (runOptimizer == true)%if (((stepNumber - lastUpdateStepNumber) > 10) && (runOptimizer == true))
+    % Draw the graphics. Since this can be fairly slow, we currently only
+    % run it when the optimizer is run
+    if (runOptimizer == true)%
         graphicalOutput.update();
-    %    lastUpdateStepNumber = stepNumber;
     end
     
     eventGenerator.step();
 end
 
-% Run the optimizer
+% Make sure the optimizer is run. Note we do this a bit inefficiently to
+% give feedback via the rendering
 for l = 1 : numLocalizationSystems
     localizationSystems{l}.optimize(20);
     [T, X, P] = localizationSystems{l}.robotEstimateHistory();
@@ -81,7 +83,7 @@ for l = 1 : numLocalizationSystems
     results{l}.vehicleCovarianceHistory = P;
 end
 
+% Make sure that the graphics output is updated to show the final state
 graphicalOutput.update();
-
 
 end

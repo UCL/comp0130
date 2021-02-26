@@ -156,7 +156,7 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
     % They are used to compute various quantities needed in Algorithm 1 of
     % "A Tutorial on Graph-Based SLAM" by Grisetti et al.
     
-    methods(Access = {?g2o.core.OptimizationAlgorithm})
+    methods(Access = {?g2o.core.OptimizationAlgorithm,?g2o.sampling.HamiltonianSampler})
         
         function [HX,bX] = computeHB(this, X)
             

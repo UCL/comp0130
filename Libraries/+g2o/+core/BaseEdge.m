@@ -86,6 +86,42 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             % Preallocate space for the Jacobians for each vertex
             this.J = cell(1, numVertices);
         end
+    end
+    
+    methods(Access = public)
+                
+        % Set the value of Omega for this edge.
+        function setInformation(this, newOmega)
+            % Needs to be a 2D array
+            newOmegaNDims = ndims(newOmega);
+            assert(newOmegaNDims == 2, ...
+                'g2o:baseedge:setinformation:informationwrongdimension', ...
+                'The information matrix must be a two dimensional array; ndims=%d', ...
+                newOmegaNDims);
+            
+            % Get the vector sizes
+            rows = size(newOmega, 1);
+            cols = size(newOmega, 2);
+
+            % Check the size
+            assert((rows == this.dimZ) && (cols == this.dimZ), ...
+                'g2o:baseedge:setinformation:informationwrongdimension', ...
+                ['The information matrix should be a square ' ...
+                ' matrix of dimension %d; the matrix has dimensions (%d, %d)'], ...
+                this.dimZ, rows, cols);
+            
+            % Check not NaN
+            assert(any(any(isnan(newOmega))) == false, ...
+                'g2o:baseedge:setinformation:informationhasnans', ...
+                'The information matrix contains NaNs');
+            
+            % Check the matrix matrix is positive semidefinite
+            assert(all(eig(newOmega) > eps), 'g2o:baseedge:setinformation:informationnotpsd', ...
+                'The information matrix is not positive semidefinite');
+            
+            this.Omega = newOmega;
+        end
+
         
     end
     
@@ -260,38 +296,6 @@ classdef BaseEdge < g2o.core.HyperGraphElement
         % Return the measurement value.
         function z = measurement(this)
            z = this.z; 
-        end
-        
-        % Set the value of Omega for this edge.
-        function setInformation(this, newOmega)
-            % Needs to be a 2D array
-            newOmegaNDims = ndims(newOmega);
-            assert(newOmegaNDims == 2, ...
-                'g2o:baseedge:setinformation:informationwrongdimension', ...
-                'The information matrix must be a two dimensional array; ndims=%d', ...
-                newOmegaNDims);
-            
-            % Get the vector sizes
-            rows = size(newOmega, 1);
-            cols = size(newOmega, 2);
-
-            % Check the size
-            assert((rows == this.dimZ) && (cols == this.dimZ), ...
-                'g2o:baseedge:setinformation:informationwrongdimension', ...
-                ['The information matrix should be a square ' ...
-                ' matrix of dimension %d; the matrix has dimensions (%d, %d)'], ...
-                this.dimZ, rows, cols);
-            
-            % Check not NaN
-            assert(any(any(isnan(newOmega))) == false, ...
-                'g2o:baseedge:setinformation:informationhasnans', ...
-                'The information matrix contains NaNs');
-            
-            % Check the matrix matrix is positive semidefinite
-            assert(all(eig(newOmega) > eps), 'g2o:baseedge:setinformation:informationnotpsd', ...
-                'The information matrix is not positive semidefinite');
-            
-            this.Omega = newOmega;
         end
         
         % Return the value of omega for this edge.

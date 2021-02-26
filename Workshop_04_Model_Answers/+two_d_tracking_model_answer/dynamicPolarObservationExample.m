@@ -5,10 +5,14 @@ import g2o.core.*;
 import two_d_tracking_model_answer.*;
 
 % Some parameters
-numberOfTimeSteps = 1000;
+numberOfTimeSteps = 400;
 dT = 1;
-sigmaR = diag([10 1*pi/180]).^2;
-sigmaQ = 0.01;
+sigmaR = diag([1 2*pi/180]).^2;
+sigmaQ = 100;
+
+% The observation period - observations are available once every
+% obsPeriod steps
+obsPeriod = 10;
 
 % Some sensor positions
 sensorPose=[50 50 0]';
@@ -65,12 +69,15 @@ for n = 1 : numberOfTimeSteps
     v{n} = ObjectStateVertex();
 
     % Set the initial estimate.
+    
+    %% TODO: Change this to use a Kalman filter instead
+    
     xy(:, n) = z(1,n) .* [cos(z(2,n) + sensorPose(3));sin(z(2,n) + sensorPose(3))]+sensorPose(1:2);
     if (n > 2)
         vxvy(:,n) = (xy(:,n)-xy(:,n-1)) / dT;
     end
     
-    v{n}.setEstimate([xy(1, n) 0 xy(2, n) 0]');
+    v{n}.setEstimate([0*xy(1, n) 0 0*xy(2, n) 0]');
         
     % Added the vertex to the graph.
     graph.addVertex(v{n});
@@ -86,21 +93,22 @@ for n = 1 : numberOfTimeSteps
         graph.addEdge(processModelEdge);
     end
     
-    % Create the measurement edge
-    e = ObjectPolarMeasurementEdge();
-    e.setSensorPose(sensorPose);
-    
-    % Link it so that it connects to the vertex we want to estimate
-    e.setVertex(1, v{n});
-    
-    % Set the measurement value and the measurement covariance
-    e.setMeasurement(z(:,n));
-    e.setInformation(omegaR);
-    
-    % Add the edge to the graph; the graph now knows we have these edges
-    % which need to be added
-    graph.addEdge(e);
-    
+    if (rem(n, obsPeriod) == 1)
+        % Create the measurement edge
+        e = ObjectPolarMeasurementEdge();
+        e.setSensorPose(sensorPose);
+
+        % Link it so that it connects to the vertex we want to estimate
+        e.setVertex(1, v{n});
+
+        % Set the measurement value and the measurement covariance
+        e.setMeasurement(z(:,n));
+        e.setInformation(omegaR);
+
+        % Add the edge to the graph; the graph now knows we have these edges
+        % which need to be added
+        graph.addEdge(e);
+    end
 end
 
 % Graph construction complete
@@ -129,7 +137,7 @@ gH(2)=plot(trueX(1, :), trueX(3, :), '-+');
 
 % Optimize the graph
 tic
-graph.optimize(50)
+graph.optimize(10000)
 toc
 
 % Extract the optimized state estimate and plot
@@ -141,7 +149,7 @@ gH(3)=plot(x(1, :), x(3, :), 'LineWidth', 2);
 
 zXY = z(1,:) .* [cos(z(2,:) + sensorPose(3));sin(z(2,:) + sensorPose(3))];
 
-gH(4)=plot(zXY(1,:) + sensorPose(1), zXY(2,:) + sensorPose(2), '-o');
+gH(4)=plot(zXY(1,1:obsPeriod:end) + sensorPose(1), zXY(2,1:obsPeriod:end) + sensorPose(2), '-o');
 
 % Generate the legend
 legend(gH, {'Prior', 'Truth', 'Optimized', 'Observation'});

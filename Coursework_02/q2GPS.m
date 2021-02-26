@@ -1,5 +1,8 @@
 % This script runs the GPS
 
+import minislam.slam.kalman.*;
+import minislam.slam.g2o.*;
+
 % Configure to disable other sensor types
 parameters = minislam.event_generators.simulation.Parameters();
 parameters.enableGPS = true;
@@ -7,14 +10,14 @@ parameters.enableLaser = false;
 
 % This says how much simulation time happens between each GPS measurement.
 % Change as per the coursework instructions
-parameters.gpsMeasurementPeriod = 1;
+parameters.gpsMeasurementPeriod = 5;
 
 % Set up the simulator and the output
-simulator = minislam.event_generators.simulation.Simulator(parameters);
+simulator = minislam.event_generators.simulation.Simulator(parameters, 'q2');
 
 % Create and run the different localization systems
-kalmanFilterSLAMSystem = minislam.slam.kalman.KalmanFilterSLAMSystem();
-g2oSLAMSystem = minislam.slam.g2o.G2OSLAMSystem();
+kalmanFilterSLAMSystem = KalmanFilterSLAMSystem();
+g2oSLAMSystem = G2OSLAMSystem();
 results = minislam.mainLoop(simulator, {kalmanFilterSLAMSystem, g2oSLAMSystem});
 
 % Plot the error curves

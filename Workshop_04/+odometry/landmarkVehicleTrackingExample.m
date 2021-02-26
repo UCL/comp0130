@@ -4,10 +4,6 @@
 % and bearing to zero or more landmarks in the environment. A landmark
 % is visible if it's within a given distance of the vehicle. In addition,
 % the bearing must be below a threshold
-%
-% Note this is NOT a SLAM problem because the landmark positions are all
-% assumed known. You will create a SLAM system and investigate its
-% properties for Coursework 02.
 
 import g2o.core.*;
 import odometry.*;

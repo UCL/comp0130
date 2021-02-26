@@ -21,11 +21,8 @@ classdef VehicleSLAMSystem < handle
         % Flag to show if debugging is enabled
         debug = true;
         
+        % Flag to show if the system has been initialized or not
         initialized;
-        
-        % Temporary!
-        %parameters;
-        
     end
        
     methods(Access = public)
@@ -148,19 +145,19 @@ classdef VehicleSLAMSystem < handle
     
     methods(Access = protected, Abstract)
        
-        % Handle a GPS measurement
+        % Handle the initial conditions
         handleInitialConditionEvent(this, event);
                 
-        % Handle not predicting
+        % Handle when there is no prediction between events
         handleNoPrediction(this);
         
-        % Handle everything needed to predict to the current state.
+        % Handle everything needed to predict to the current state
         handlePredictToTime(this, time);
  
         % Handle a GPS measurement
         handleGPSObservationEvent(this, event);
             
-        % Handle a set of laser measurements
+        % Handle a set of measurements of landmarks
         handleLandmarkObservationEvent(this, event);
     end
 end
