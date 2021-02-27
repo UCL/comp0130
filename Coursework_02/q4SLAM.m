@@ -13,7 +13,7 @@ parameters.enableGPS = false;
 parameters.enableLaser = true;
 
 % Set up the simulator and the output
-simulator = minislam.event_generators.simulation.Simulator(parameters, 'task3');
+simulator = minislam.event_generators.simulation.Simulator(parameters, 'q3-large-test');
 
 % Create and run the different localization systems
 g2oSLAMSystem = G2OSLAMSystem();
