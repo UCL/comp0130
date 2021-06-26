@@ -35,7 +35,19 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
     end
     
     methods(Access = public, Sealed)
+        
+        % This function makes it possible to over-ride the sparse
+        % optimizer. Sometimes this can cause matlab to crash due to a mex
+        % issue.        
+        function useSparseInvIfItExists(this, useSparseInv)
+            if (exist('sparseinv_mex', 'file') == 3)
+                this.useSparseInv = useSparseInv;
+            else
+                this.useSparseInv = false;
+            end
+        end
        
+        % Set the optimization algorithm which is used
         function setAlgorithm(this, optimizationAlgorithm)
             
             assert(isa(optimizationAlgorithm, 'g2o.core.OptimizationAlgorithm') == true, ...
@@ -48,6 +60,7 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             optimizationAlgorithm.setGraph(this);
         end
         
+        % Return the optimization algorithm
         function algorithm = algorithm(this)
             algorithm = this.optimizationAlgorithm;
         end
@@ -156,7 +169,7 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
     % They are used to compute various quantities needed in Algorithm 1 of
     % "A Tutorial on Graph-Based SLAM" by Grisetti et al.
     
-    methods(Access = {?g2o.core.OptimizationAlgorithm,?g2o.sampling.HamiltonianSampler})
+    methods(Access = {?g2o.core.OptimizationAlgorithm,?g2o.sampling.RiemannianHamiltonianSampler})
         
         function [HX,bX] = computeHB(this, X)
             
@@ -221,7 +234,7 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
         end
                 
         % Iterate through and set all the vertex states from the state
-        % vector
+        % vector.
         function assignXToVertices(this, X)
             
             % Check dimensions are the same
@@ -234,7 +247,10 @@ classdef SparseOptimizer < g2o.core.OptimizableGraph
             % the state is set up correctly for each vertex.
             for v = 1 : this.numNonFixedVertices
                 this.nonFixedVertices{v}.x = X(this.nonFixedVertices{v}.iX);
-            end                        
+            end
+            
+            % Update our local store of X
+            this.X = X;
         end
         
         % Iterate through and set all vertex states from the state vector
