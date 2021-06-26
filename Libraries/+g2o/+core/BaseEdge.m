@@ -250,11 +250,14 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             b = cell(1, this.numVertices);
             
             % Work out the contribution from each vertex. Note
-            % this is symmetric, so we only populate the upper triangle
+            % this is symmetric, so we only populate the upper triangle.
+            % We also cache common terms
             for i = 1 : this.numVertices         
                 b{i} = this.J{i}' * (this.Omega * this.errorZ);
-                for j = i : this.numVertices
-                    H{i, j} = this.J{i}' * this.Omega * this.J{j};
+                JWi = this.J{i}' * this.Omega;
+                H{i, i} = JWi * this.J{i};
+                for j = i + 1 : this.numVertices
+                    H{i, j} = JWi * this.J{j};
                 end
             end
         end
