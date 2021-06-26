@@ -150,8 +150,11 @@ classdef BaseEdge < g2o.core.HyperGraphElement
             % Assign
             this.edgeVertices{vertexNumber} = vertex;
             
-            % (Re)allocate the storage of the Jacobian for this vertex
-            this.J{vertexNumber} = zeros(vertex.dimension(), this.dimZ);
+            % The Jacobian should be of the form
+            % this.J{vertexNumber} = NaN(this.dimZ, vertex.dimension());
+            % We leave it blank here to trigger errors if, for example, the
+            % Jacobian was not set in the subclass.
+            this.J{vertexNumber} = [];
             
             % Register the edge with the vertex
             vertex.addEdge(this);
@@ -245,6 +248,15 @@ classdef BaseEdge < g2o.core.HyperGraphElement
 
             % Compute the error
             this.computeError();
+            
+            % Check all the Jacobians have the correction dimensnions
+            for i = 1 : this.numVertices
+                sz = size(this.J{i});
+                assert((sz(1) == this.dimZ) && (sz(2) == this.edgeVertices{i}.dimension()), ...
+                    'g2o:baseedge:computehb:jacobianwrongdimension', ...
+                    'The Jacobian for vertex %d is incorrectly sized; required=(%dx%d), provided = (%dx%d)', ...
+                    i, this.dimZ, this.edgeVertices{i}.dimension(), sz(1), sz(2));
+            end
             
             H = cell(this.numVertices, this.numVertices);
             b = cell(1, this.numVertices);
